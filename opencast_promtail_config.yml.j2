@@ -1,0 +1,52 @@
+---
+server:
+  http_listen_port: {{ promtail_http_listen_port }}
+  grpc_listen_port: {{ promtail_grpc_listen_port }}
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+{% if promtail_use_tls %}
+  - url: 'https://{{ loki_host }}:{{ loki_http_listen_port }}/loki/api/v1/push'
+{% else %}
+  - url: 'http://{{ loki_host }}:{{ loki_http_listen_port }}/loki/api/v1/push'
+{% endif %}
+{% if use_basic_auth %}
+    basic_auth:
+      username: '{{ basic_auth_user }}'
+      password: '{{ basic_auth_password }}'
+{% endif %}
+
+scrape_configs:
+{% if promtail_job_journal %}
+  - job_name: journal
+    journal:
+      max_age: 12h
+      labels:
+        job: systemd
+        host: {{ inventory_hostname }}
+    relabel_configs:
+      - source_labels: ['__journal__systemd_unit']
+        target_label: 'unit'
+{% endif %}
+  - job_name: opencast
+    static_configs:
+      - targets:
+        - localhost
+        labels:
+          job: opencast
+          host: {{ inventory_hostname }}
+          __path__: /var/log/opencast/opencast.log
+    pipeline_stages:
+      - match:
+          selector: '{job="opencast"}'
+          stages:
+          - multiline:
+            # Identify timestamps as first line of a multiline block. Enclose the string in single quotes.
+              firstline: '^\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2},\d{3} \| (INFO|WARN|ERROR)\s+\|'
+              max_wait_time: 5s
+          - regex:
+            # Flag (?s:.*) needs to be set for regex stage to capture full traceback log in the extracted map.
+              expression: '^(?P<time>\d{4}-\d{2}-\d{2}T\d{1,2}:\d{2}:\d{2},\d{3}) \| (?P<log_level>INFO|WARN|ERROR)\s+\| (?P<message>(?s:.*)$)'
+
