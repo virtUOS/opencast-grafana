@@ -1,0 +1,31 @@
+---
+- job_name: opencast-metrics
+  scheme: https
+  metrics_path: /metrics
+  basic_auth:
+    username: { { prometheus.user } }
+    password: { { prometheus.password } }
+  static_configs:
+    - targets:
+        - oc-admin.example.de
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: "^(jvm|process)_.*"
+      action: drop
+
+- job_name: opencast-jvm-metrics
+  scheme: https
+  metrics_path: /metrics
+  basic_auth:
+    username: { { prometheus.user } }
+    password: { { prometheus.password } }
+  static_configs:
+    - targets:
+        - oc-admin.example.de
+        - presentation.example.de
+        - oc-worker01.example.de
+        - oc-worker10.example.de
+  metric_relabel_configs:
+    - source_labels: [__name__]
+      regex: "^opencast_.*"
+      action: drop

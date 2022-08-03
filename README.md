@@ -34,3 +34,10 @@ The following variables are somehow expected by this template, the default value
 | `basic_auth_user` | required if  `use_basic_auth` is `true` |
 | `basic_auth_password` | required if  `use_basic_auth` is `true` |
 | `promtail_job_journal` | `false` |
+
+## Opencast Prometheus Config
+
+The file `opencast-prometheus.yml` contains an example for prometheus scrape jobs that expands on the example from the [docs](https://docs.opencast.org/develop/admin/#modules/metrics/) for a multi-node cluster.
+Specifically, it splits up the metrics from the opencast endpoint into two jobs:
+  1. Opencast-specific metrics that are only scraped from the admin node
+  2. JVM metrics that are scraped from all nodes
